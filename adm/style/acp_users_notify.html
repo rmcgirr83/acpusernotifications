@@ -1,0 +1,46 @@
+<form id="ucp" method="post" action="{{ U_ACTION }}"{{ S_FORM_ENCTYPE }}>
+
+<h2>{{ lang('NOTIFY_EDIT') }}</h2>
+<div class="panel">
+	<div class="inner">
+		<p>{{ lang('NOTIFY_EDIT_EXPLAIN') }}</p>
+			<table class="table1">
+				<thead>
+					<tr>
+						<th>{{ lang('NOTIFICATION_TYPE') }}</th>
+						{% for notification_methods in loops.notification_methods %}
+							<th class="mark">{{ notification_methods.NAME }}</th>
+						{% endfor %}
+					</tr>
+				</thead>
+
+				<tbody>
+					{% for notification_types in loops.notification_types %}
+						{% if notification_types.GROUP_NAME %}
+							<tr class="row3">
+								<td colspan="{{ NOTIFICATION_TYPES_COLS }}">{{ notification_types.GROUP_NAME }}</td>
+							</tr>
+						{% else %}
+							<tr class="{% if notification_types.S_ROW_COUNT is odd %}row1{% else %}row2{% endif %}">
+								<td>
+									{{ notification_types.NAME }}
+									{% if notification_types.EXPLAIN %}<br />&nbsp; &nbsp;{{ notification_types.EXPLAIN }}{% endif %}
+								</td>
+								{% for notification_methods in notification_types.notification_methods %}
+									<td class="mark"><input type="checkbox" name="{{ notification_types.TYPE }}_{{ notification_methods.METHOD }}"{% if  notification_methods.AVAILABLE and notification_methods.SUBSCRIBED %} checked="checked"{% endif %}{% if not notification_methods.AVAILABLE %} disabled="disabled"{% endif %} /></td>
+								{% endfor %}
+							</tr>
+						{% endif %}
+					{% endfor %}
+				</tbody>
+			</table>
+	</div>
+</div>
+
+<fieldset class="quick">
+	<input type="submit" name="submit" value="{{ lang('SUBMIT') }}" class="button1" />
+	<div><a href="#" onclick="$('#ucp input:checkbox').prop('checked', true); return false;">{{ lang('MARK_ALL') }}</a> &bull; <a href="#" onclick="$('#ucp input:checkbox').prop('checked', false); return false;">{{ lang('UNMARK_ALL') }}</a></div>
+	{{ S_FORM_TOKEN }}
+</fieldset>
+
+</form>
