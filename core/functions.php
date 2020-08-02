@@ -9,6 +9,9 @@
 
 namespace david63\acpusernotifications\core;
 
+use phpbb\auth\auth;
+use phpbb\db\driver\driver_interface;
+use phpbb\user;
 use phpbb\extension\manager;
 use phpbb\exception\version_check_exception;
 
@@ -17,18 +20,33 @@ use phpbb\exception\version_check_exception;
 */
 class functions
 {
+	/** @var \phpbb\auth\auth; */
+	protected $auth;
+
+	/** @var \phpbb\db\driver\driver_interface; */
+	protected $db;
+
+	/** @var \phpbb\user */
+	protected $user;
+
 	/** @var \phpbb\extension\manager */
 	protected $phpbb_extension_manager;
 
 	/**
 	* Constructor for functions
 	*
+	* @param \phpbb\auth\auth						$auth			Auth object
+	* @param \phpbb\db\driver\driver_interface		$db				Database object
+	* @param \phpbb\user							$user			User object
 	* @param \phpbb\extension\manager 	$phpbb_extension_manager	Extension manager
 	*
 	* @access public
 	*/
-	public function __construct(manager $phpbb_extension_manager)
+	public function __construct(auth $auth, driver_interface $db, user $user, manager $phpbb_extension_manager)
 	{
+		$this->auth 		= $auth;
+		$this->db 			= $db;
+		$this->user			= $user;
 		$this->ext_manager	= $phpbb_extension_manager;
 
 		$this->namespace	= __NAMESPACE__;
@@ -161,5 +179,60 @@ class functions
 		}
 
 		return array($php_valid, $phpbb_valid);
+	}
+
+	/**
+	* notify_change_user
+	*
+	* @param $user_id	the user id whose notification types we are looking at
+	* @param $mode		the mode either replace or restore
+	* @param $bkup_data	an array of the current users data
+	* changes the user in the ACP to that of the user chosen in the ACP
+	*/
+	public function notify_change_user($user_id, $mode = 'replace', $bkup_data = false)
+	{
+		switch ($mode)
+		{
+			// change our user to the one being viewed
+			case 'replace':
+
+				$bkup_data = [
+					'user_backup'	=> $this->user->data,
+				];
+
+				// sql to get the users info
+				$sql = 'SELECT *
+					FROM ' . USERS_TABLE . '
+					WHERE user_id = ' . (int) $user_id;
+				$result	= $this->db->sql_query($sql);
+				$row = $this->db->sql_fetchrow($result);
+				$this->db->sql_freeresult($result);
+
+				// reset the current users info to that of the notify user
+				// we do this instead of just using the sql query
+				// for items such as $this->user->data['is_registered'] which isn't a table column from the users table
+				$this->user->data = array_merge($this->user->data, $row);
+
+				// reset the users auths
+				$this->auth->acl($this->user->data);
+
+				unset($row);
+
+				return $bkup_data;
+
+			break;
+
+			// now we restore the users stuff
+			case 'restore':
+
+				$this->user->data = $bkup_data['user_backup'];
+
+				//set the auths back to normal
+				$this->auth->acl($this->user->data);
+
+				unset($bkup_data);
+
+			break;
+		}
 	}
 }

@@ -20,4 +20,7 @@ services:
     david63.acpusernotifications.core.functions:
         class: david63\acpusernotifications\core\functions
         arguments:
+            - '@auth'
+            - '@dbal.conn'
+            - '@user'
             - '@ext.manager'

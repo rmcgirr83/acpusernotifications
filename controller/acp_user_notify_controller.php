@@ -88,7 +88,17 @@ class acp_user_notify_controller implements acp_user_notify_interface
 
 		$action = append_sid("{$this->phpbb_root_path}adm/index.$this->phpEx" . '?i=acp_users&amp;mode=usernotify&amp;u=' . $user_id);
 
+		//because of the way the notification system is written,
+		//we need to change to the actual user in order to retrieve the correct types and methods
+		//for the user being viewed...this is nothing more than a HACK :shock:
+		$user_data = $this->functions->notify_change_user($user_id);
+
 		$subscriptions = $this->notification_manager->get_global_subscriptions($user_id);
+		$this->output_notification_methods('notification_methods');
+		$this->output_notification_types($subscriptions, 'notification_types');
+
+		//we're in the ACP, have to have the auths for ACP stuff
+		$user_data = $this->functions->notify_change_user($user_id, 'restore', $user_data);
 
 		// Add/remove subscriptions
 		if ($this->request->is_set_post('submit'))
@@ -121,9 +131,6 @@ class acp_user_notify_controller implements acp_user_notify_interface
 			// Send updated message
 			trigger_error($this->language->lang('NOTIFICATIONS_UPDATED') . adm_back_link($action));
 		}
-
-		$this->output_notification_methods('notification_methods');
-		$this->output_notification_types($subscriptions, 'notification_types');
 
 		$this->template->assign_vars(array(
 			'S_AUN'		=> true,
